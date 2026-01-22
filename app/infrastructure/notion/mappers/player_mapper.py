@@ -3,14 +3,14 @@ from app.infrastructure.notion.mappers.base import BaseMapper
 
 class PlayerMapper(BaseMapper[Player]):
 
-    PROP_PLAYER_CODE = "선수코드"
-    PROP_TEAM_CODE = "팀코드"
-    PROP_NAME = "이름"
-    PROP_BACK_NUMBER = "등번호"
-    PROP_POSITION = "포지션"
-    PROP_BAT_THROW = "타격투구"
-    PROP_BATTING_ORDER = "타순"
-    PROP_IS_STARTER = "선발여부"
+    PROP_PLAYER_CODE = "player_code"
+    PROP_TEAM_CODE = "team_code"
+    PROP_NAME = "name"
+    PROP_BACK_NUMBER = "back_number"
+    PROP_POSITION = "position"
+    PROP_BAT_THROW = "bat_throw"
+    PROP_BATTING_ORDER = "batting_order"
+    PROP_IS_STARTER = "is_starter"
 
     def to_properties(self, model: Player) -> dict:
         properties = {
