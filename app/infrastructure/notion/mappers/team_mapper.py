@@ -5,14 +5,14 @@ from app.infrastructure.notion.mappers.base import BaseMapper
 
 class TeamMapper(BaseMapper[Team]):
 
-    PROP_TEAM_CODE = "팀코드"
-    PROP_TEAM_NAME = "팀명"
-    PROP_HAS_TODAY_GAME = "오늘경기여부"
-    PROP_OPPONENT_CODE = "상대팀코드"
-    PROP_STARTER_PITCHER = "선발투수"
-    PROP_LAST_GAME_DATE = "마지막경기일"
-    PROP_SEASON_ENDED = "시즌종료여부"
-    PROP_UPDATED_AT = "업데이트일시"
+    PROP_TEAM_CODE = "team_code"
+    PROP_TEAM_NAME = "team_name"
+    PROP_HAS_TODAY_GAME = "has_today_game"
+    PROP_OPPONENT_CODE = "opponent_team_code"
+    PROP_STARTER_PITCHER = "starter_pitcher_name"
+    PROP_LAST_GAME_DATE = "last_game_date"
+    PROP_SEASON_ENDED = "is_season_ended"
+    PROP_UPDATED_AT = "updated_at"
 
     def to_properties(self, model: Team) -> dict:
         properties = {

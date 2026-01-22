@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 
+from app.routers import crawl
+
 app = FastAPI(title="Cheerlot Crawler API")
+
+app.include_router(crawl.router)
 
 
 @app.get("/")

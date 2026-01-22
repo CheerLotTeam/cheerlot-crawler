@@ -18,6 +18,9 @@ class GameLineup:
     away_team_code: str
     home_players: list[LineupPlayer]
     away_players: list[LineupPlayer]
+    game_date: date | None = None
+    home_starter_name: str | None = None
+    away_starter_name: str | None = None
 
 class PreviewParser:
 
@@ -34,15 +37,31 @@ class PreviewParser:
         if not self._has_lineup(home_lineup) or not self._has_lineup(away_lineup):
             return None
 
+        home_starter = preview_data.get("homeStarter", {})
+        away_starter = preview_data.get("awayStarter", {})
+        game_date = self._parse_game_date(game_info.get("gdate"))
+
         return GameLineup(
             home_team_code=game_info["hCode"],
             away_team_code=game_info["aCode"],
             home_players=self._parse_players(home_lineup),
             away_players=self._parse_players(away_lineup),
+            game_date=game_date,
+            home_starter_name=home_starter.get("playerInfo", {}).get("name"),
+            away_starter_name=away_starter.get("playerInfo", {}).get("name"),
         )
 
     def _is_valid_response(self, data: dict) -> bool:
         return data.get("code") == 200 and data.get("success") is True
+
+    def _parse_game_date(self, gdate: str | int | None) -> date | None:
+        if not gdate:
+            return None
+        try:
+            gdate_str = str(gdate)
+            return date(int(gdate_str[:4]), int(gdate_str[4:6]), int(gdate_str[6:8]))
+        except (ValueError, IndexError):
+            return None
 
     def _has_lineup(self, lineup: list[dict]) -> bool:
         return any("batorder" in player for player in lineup)
