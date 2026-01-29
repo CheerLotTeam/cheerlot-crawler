@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, time
 from typing import Any
 
 KBO_GAME_ID_LENGTH = 17
@@ -21,6 +21,13 @@ class GameLineup:
     game_date: date | None = None
     home_starter_name: str | None = None
     away_starter_name: str | None = None
+
+@dataclass
+class ScheduledGame:
+    game_id: str
+    start_time: time
+    home_team_code: str
+    away_team_code: str
 
 class PreviewParser:
 
@@ -50,6 +57,33 @@ class PreviewParser:
             home_starter_name=home_starter.get("playerInfo", {}).get("name"),
             away_starter_name=away_starter.get("playerInfo", {}).get("name"),
         )
+
+    def parse_scheduled_game(self, game_id: str, data: dict[str, Any]) -> ScheduledGame | None:
+        if not self._is_valid_response(data):
+            return None
+
+        game_info = data["result"]["previewData"]["gameInfo"]
+
+        start_time = self._parse_game_time(game_info.get("gtime"))
+        if start_time is None:
+            return None
+
+        return ScheduledGame(
+            game_id=game_id,
+            start_time=start_time,
+            home_team_code=game_info["hCode"].lower(),
+            away_team_code=game_info["aCode"].lower(),
+        )
+
+    def _parse_game_time(self, gtime: str | None) -> time | None:
+        """시간 문자열을 time 객체로 변환 (예: '18:30' -> time(18, 30))"""
+        if not gtime:
+            return None
+        try:
+            hour, minute = map(int, gtime.split(":"))
+            return time(hour, minute)
+        except (ValueError, AttributeError):
+            return None
 
     def _is_valid_response(self, data: dict) -> bool:
         return data.get("code") == 200 and data.get("success") is True

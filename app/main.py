@@ -1,8 +1,27 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
-from app.routers import crawl
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
-app = FastAPI(title="Cheerlot Crawler API")
+from app.routers import crawl
+from app.services.scheduler import SchedulerService
+
+scheduler_service = SchedulerService()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler_service.start()
+    yield
+    scheduler_service.shutdown()
+
+
+app = FastAPI(title="Cheerlot Crawler API", lifespan=lifespan)
 
 app.include_router(crawl.router)
 
