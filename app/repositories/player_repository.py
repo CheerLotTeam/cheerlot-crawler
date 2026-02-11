@@ -1,6 +1,6 @@
 from app.config import settings
 from app.models import Player
-from app.repositories.base import BaseRepository
+from app.repositories.base import BaseRepository, UpsertResult
 from app.infrastructure.notion.mappers import BaseMapper, PlayerMapper
 
 class PlayerRepository(BaseRepository[Player]):
@@ -42,7 +42,7 @@ class PlayerRepository(BaseRepository[Player]):
         }
         return self.find_by_filter(filter)
 
-    def upsert(self, player: Player) -> dict:
+    def upsert(self, player: Player) -> UpsertResult:
         filter = {
             "property": PlayerMapper.PROP_PLAYER_CODE,
             "title": {"equals": player.player_code},
@@ -50,6 +50,8 @@ class PlayerRepository(BaseRepository[Player]):
         pages = self._client.query_database(self.database_id, filter=filter)
 
         if pages:
-            return self.update(pages[0]["id"], player)
-        return self.create(player)
+            response = self.update(pages[0]["id"], player)
+            return UpsertResult(created=False, response=response)
+        response = self.create(player)
+        return UpsertResult(created=True, response=response)
     

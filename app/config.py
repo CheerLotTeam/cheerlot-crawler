@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     notion_player_db_id: str = ""
     notion_team_db_id: str = ""
     notion_cheersong_db_id: str = ""
+    discord_webhook_url: str = ""
 
     class Config:
         env_file = ".env"

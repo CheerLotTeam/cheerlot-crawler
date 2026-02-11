@@ -1,27 +1,15 @@
 import logging
 from datetime import date, datetime, timezone
 
+from app.constants import TEAM_NAMES
 from app.models import Player, Team
 from app.repositories import PlayerRepository, TeamRepository
-from app.schemas.crawl import CrawlResult
+from app.schemas.crawl import CrawlResult, NewPlayerInfo
 from app.services.crawler.schedule import ScheduleCrawlerService
 from app.services.crawler.lineup import LineupCrawlerService
 from app.services.crawler.parser import GameLineup, LineupPlayer
 
 logger = logging.getLogger(__name__)
-
-TEAM_NAMES = {
-    "hh": "한화 이글스",
-    "kt": "KT 위즈",
-    "lg": "LG 트윈스",
-    "nc": "NC 다이노스",
-    "ob": "두산 베어스",
-    "sk": "SSG 랜더스",
-    "ss": "삼성 라이온즈",
-    "wo": "키움 히어로즈",
-    "ht": "KIA 타이거즈",
-    "lt": "롯데 자이언츠",
-}
 
 
 class CrawlService:
@@ -50,16 +38,21 @@ class CrawlService:
                 error_message="라인업 조회 실패 또는 미발표",
             )
 
-        saved_count = self._save_lineup(lineup)
+        saved_count, new_players = self._save_lineup(lineup)
         self._update_teams(lineup)
 
-        logger.info(f"게임 크롤링 완료 : {game_id}, 저장된 선수 : {saved_count}명")
+        logger.info(
+            f"게임 크롤링 완료 : {game_id}, "
+            f"저장된 선수 : {saved_count}명, "
+            f"신규 선수 : {len(new_players)}명"
+        )
         return CrawlResult(
             game_id=game_id,
             success=True,
             home_team_code=lineup.home_team_code.lower(),
             away_team_code=lineup.away_team_code.lower(),
             players_saved=saved_count,
+            new_players=new_players,
         )
 
     def crawl_today_games(self) -> list[CrawlResult]:
@@ -90,20 +83,33 @@ class CrawlService:
 
         return results
 
-    def _save_lineup(self, lineup: GameLineup) -> int:
+    def _save_lineup(self, lineup: GameLineup) -> tuple[int, list[NewPlayerInfo]]:
         saved_count = 0
+        new_players: list[NewPlayerInfo] = []
 
-        for lineup_player in lineup.home_players:
-            player = self._convert_to_player(lineup_player, lineup.home_team_code)
-            self._player_repository.upsert(player)
-            saved_count += 1
+        all_entries = [
+            (lineup.home_players, lineup.home_team_code),
+            (lineup.away_players, lineup.away_team_code),
+        ]
 
-        for lineup_player in lineup.away_players:
-            player = self._convert_to_player(lineup_player, lineup.away_team_code)
-            self._player_repository.upsert(player)
-            saved_count += 1
+        for players, team_code in all_entries:
+            for lineup_player in players:
+                player = self._convert_to_player(lineup_player, team_code)
+                upsert_result = self._player_repository.upsert(player)
+                saved_count += 1
+                if upsert_result.created:
+                    new_players.append(self._to_new_player_info(player))
 
-        return saved_count
+        return saved_count, new_players
+
+    def _to_new_player_info(self, player: Player) -> NewPlayerInfo:
+        return NewPlayerInfo(
+            player_code=player.player_code,
+            name=player.name,
+            team_code=player.team_code,
+            back_number=player.back_number,
+            position=player.position,
+        )
 
     def _convert_to_player(self, lineup_player: LineupPlayer, team_code: str) -> Player:
         back_number_str = lineup_player.back_number or "00"

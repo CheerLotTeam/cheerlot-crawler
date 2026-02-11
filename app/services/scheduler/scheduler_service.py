@@ -1,17 +1,17 @@
 import logging
 from datetime import datetime, time, timedelta
-from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.date import DateTrigger
 
+from app.constants import KST
+from app.schemas.crawl import CrawlResult
 from app.services.crawl_service import CrawlService
 from app.services.crawler.schedule import ScheduleCrawlerService
+from app.services.discord_notifier import DiscordNotifier
 
 logger = logging.getLogger(__name__)
-
-KST = ZoneInfo("Asia/Seoul")
 
 
 class SchedulerService:
@@ -20,9 +20,11 @@ class SchedulerService:
         self,
         schedule_crawler: ScheduleCrawlerService | None = None,
         crawl_service: CrawlService | None = None,
+        discord_notifier: DiscordNotifier | None = None,
     ):
         self._schedule_crawler = schedule_crawler or ScheduleCrawlerService()
         self._crawl_service = crawl_service or CrawlService()
+        self._discord_notifier = discord_notifier or DiscordNotifier()
         self._scheduler = BackgroundScheduler(timezone=KST)
 
     def start(self) -> None:
@@ -44,6 +46,8 @@ class SchedulerService:
 
     def _schedule_daily_games(self) -> None:
         games = self._schedule_crawler.get_today_games()
+        self._discord_notifier.send_daily_schedule(games)
+
         if not games:
             logger.info("오늘 경기 없음")
             return
@@ -82,7 +86,16 @@ class SchedulerService:
     def _crawl_lineup(self, game_id: str) -> None:
         try:
             result = self._crawl_service.crawl_game(game_id)
+            self._discord_notifier.send_lineup_result(result)
+            if result.new_players:
+                self._discord_notifier.send_new_players(result.new_players)
             if not result.success:
                 logger.warning(f"라인업 크롤링 실패: {game_id}")
-        except Exception:
+        except Exception as e:
             logger.exception(f"라인업 크롤링 오류: {game_id}")
+            error_result = CrawlResult(
+                game_id=game_id,
+                success=False,
+                error_message=str(e),
+            )
+            self._discord_notifier.send_lineup_result(error_result)

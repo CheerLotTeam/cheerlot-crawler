@@ -1,6 +1,6 @@
 from app.config import settings
 from app.models import Team
-from app.repositories.base import BaseRepository
+from app.repositories.base import BaseRepository, UpsertResult
 from app.infrastructure.notion.mappers import BaseMapper, TeamMapper
 
 class TeamRepository(BaseRepository[Team]):
@@ -27,7 +27,7 @@ class TeamRepository(BaseRepository[Team]):
         }
         return self.find_by_filter(filter)
 
-    def upsert(self, team: Team) -> dict:
+    def upsert(self, team: Team) -> UpsertResult:
         filter = {
             "property": TeamMapper.PROP_TEAM_CODE,
             "title": {"equals": team.team_code},
@@ -35,5 +35,7 @@ class TeamRepository(BaseRepository[Team]):
         pages = self._client.query_database(self.database_id, filter=filter)
 
         if pages:
-            return self.update(pages[0]["id"], team)
-        return self.create(team)
+            response = self.update(pages[0]["id"], team)
+            return UpsertResult(created=False, response=response)
+        response = self.create(team)
+        return UpsertResult(created=True, response=response)

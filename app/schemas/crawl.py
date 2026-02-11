@@ -1,5 +1,15 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pydantic import BaseModel
+
+
+@dataclass
+class NewPlayerInfo:
+    player_code: str
+    name: str
+    team_code: str
+    back_number: int
+    position: str
+
 
 @dataclass
 class CrawlResult:
@@ -9,6 +19,7 @@ class CrawlResult:
     away_team_code: str | None = None
     players_saved: int = 0
     error_message: str | None = None
+    new_players: list[NewPlayerInfo] = field(default_factory=list)
 
 class GameCrawlResponse(BaseModel):
     game_id: str
