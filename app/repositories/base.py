@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from pydantic import BaseModel
@@ -7,6 +8,12 @@ from app.infrastructure.notion import NotionClient
 from app.infrastructure.notion.mappers import BaseMapper
 
 T = TypeVar("T", bound=BaseModel)
+
+
+@dataclass
+class UpsertResult:
+    created: bool
+    response: dict
 
 class BaseRepository(ABC, Generic[T]):
 
