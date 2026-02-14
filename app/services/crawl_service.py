@@ -8,6 +8,7 @@ from app.schemas.crawl import CrawlResult, NewPlayerInfo
 from app.services.crawler.schedule import ScheduleCrawlerService
 from app.services.crawler.lineup import LineupCrawlerService
 from app.services.crawler.parser import GameLineup, LineupPlayer
+from app.services.discord_notifier import DiscordNotifier
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +21,13 @@ class CrawlService:
         lineup_crawler: LineupCrawlerService | None = None,
         player_repository: PlayerRepository | None = None,
         team_repository: TeamRepository | None = None,
+        discord_notifier: DiscordNotifier | None = None,
     ):
         self._schedule_crawler = schedule_crawler or ScheduleCrawlerService()
         self._lineup_crawler = lineup_crawler or LineupCrawlerService()
         self._player_repository = player_repository or PlayerRepository()
         self._team_repository = team_repository or TeamRepository()
+        self._discord_notifier = discord_notifier or DiscordNotifier()
 
     def crawl_game(self, game_id: str) -> CrawlResult:
         logger.info(f"게임 크롤링 시작 : {game_id}")
@@ -32,11 +35,13 @@ class CrawlService:
         lineup = self._lineup_crawler.crawl_lineup(game_id)
         if lineup is None:
             logger.warning(f"라인업 조회 실패 또는 미발표 : {game_id}")
-            return CrawlResult(
+            result = CrawlResult(
                 game_id=game_id,
                 success=False,
                 error_message="라인업 조회 실패 또는 미발표",
             )
+            self._notify(result)
+            return result
 
         saved_count, new_players = self._save_lineup(lineup)
         self._update_teams(lineup)
@@ -46,7 +51,7 @@ class CrawlService:
             f"저장된 선수 : {saved_count}명, "
             f"신규 선수 : {len(new_players)}명"
         )
-        return CrawlResult(
+        result = CrawlResult(
             game_id=game_id,
             success=True,
             home_team_code=lineup.home_team_code.lower(),
@@ -54,6 +59,13 @@ class CrawlService:
             players_saved=saved_count,
             new_players=new_players,
         )
+        self._notify(result)
+        return result
+
+    def _notify(self, result: CrawlResult) -> None:
+        self._discord_notifier.send_lineup_result(result)
+        if result.new_players:
+            self._discord_notifier.send_new_players(result.new_players)
 
     def crawl_today_games(self) -> list[CrawlResult]:
         logger.info("오늘 경기 크롤링 시작")

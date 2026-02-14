@@ -86,9 +86,6 @@ class SchedulerService:
     def _crawl_lineup(self, game_id: str) -> None:
         try:
             result = self._crawl_service.crawl_game(game_id)
-            self._discord_notifier.send_lineup_result(result)
-            if result.new_players:
-                self._discord_notifier.send_new_players(result.new_players)
             if not result.success:
                 logger.warning(f"라인업 크롤링 실패: {game_id}")
         except Exception as e:

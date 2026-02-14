@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class DiscordNotifier:
 
     def __init__(self, webhook_url: str | None = None, timeout: float = 10.0):
-        self._webhook_url = webhook_url or settings.discord_webhook_url
+        self._webhook_url = webhook_url if webhook_url is not None else settings.discord_webhook_url
         self._timeout = timeout
 
     def _is_enabled(self) -> bool:
