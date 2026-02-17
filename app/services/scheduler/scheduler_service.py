@@ -30,7 +30,7 @@ class SchedulerService:
     def start(self) -> None:
         self._scheduler.add_job(
             func=self._schedule_daily_games,
-            trigger=CronTrigger(hour=6, minute=0),
+            trigger=CronTrigger(hour=6, minute=0, timezone=KST),
             id="daily_schedule",
             replace_existing=True,
         )
