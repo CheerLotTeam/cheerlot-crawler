@@ -8,6 +8,7 @@ from app.schemas.crawl import CrawlResult, NewPlayerInfo
 from app.services.crawler.schedule import ScheduleCrawlerService
 from app.services.crawler.lineup import LineupCrawlerService
 from app.services.crawler.parser import GameLineup, LineupPlayer
+from app.services.cache_reset_service import CacheResetService
 from app.services.discord_notifier import DiscordNotifier
 
 logger = logging.getLogger(__name__)
@@ -22,12 +23,14 @@ class CrawlService:
         player_repository: PlayerRepository | None = None,
         team_repository: TeamRepository | None = None,
         discord_notifier: DiscordNotifier | None = None,
+        cache_reset_service: CacheResetService | None = None,
     ):
         self._schedule_crawler = schedule_crawler or ScheduleCrawlerService()
         self._lineup_crawler = lineup_crawler or LineupCrawlerService()
         self._player_repository = player_repository or PlayerRepository()
         self._team_repository = team_repository or TeamRepository()
         self._discord_notifier = discord_notifier or DiscordNotifier()
+        self._cache_reset_service = cache_reset_service or CacheResetService()
 
     def crawl_game(self, game_id: str) -> CrawlResult:
         logger.info(f"게임 크롤링 시작 : {game_id}")
@@ -60,6 +63,8 @@ class CrawlService:
             new_players=new_players,
         )
         self._notify(result)
+        if result.players_saved > 0:
+            self._cache_reset_service.reset()
         return result
 
     def _notify(self, result: CrawlResult) -> None:
