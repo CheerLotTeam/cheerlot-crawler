@@ -101,6 +101,12 @@ class CrawlService:
         return results
 
     def _save_lineup(self, lineup: GameLineup) -> tuple[int, list[NewPlayerInfo]]:
+        home_team = lineup.home_team_code.lower()
+        away_team = lineup.away_team_code.lower()
+
+        self._player_repository.reset_starters(home_team)
+        self._player_repository.reset_starters(away_team)
+
         saved_count = 0
         new_players: list[NewPlayerInfo] = []
 
