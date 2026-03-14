@@ -42,6 +42,31 @@ class PlayerRepository(BaseRepository[Player]):
         }
         return self.find_by_filter(filter)
 
+    def reset_starters(self, team_code: str) -> int:
+        filter = {
+            "and": [
+                {
+                    "property": PlayerMapper.PROP_TEAM_CODE,
+                    "rich_text": {"equals": team_code},
+                },
+                {
+                    "property": PlayerMapper.PROP_IS_STARTER,
+                    "checkbox": {"equals": True},
+                },
+            ]
+        }
+        pages = self._client.query_database(self.database_id, filter=filter)
+
+        reset_properties = {
+            PlayerMapper.PROP_IS_STARTER: {"checkbox": False},
+            PlayerMapper.PROP_BATTING_ORDER: {"number": None},
+        }
+
+        for page in pages:
+            self._client.update_page(page["id"], reset_properties)
+
+        return len(pages)
+
     def upsert(self, player: Player) -> UpsertResult:
         filter = {
             "property": PlayerMapper.PROP_PLAYER_CODE,
