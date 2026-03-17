@@ -1,6 +1,11 @@
-import httpx
+import logging
 from typing import Any
 from datetime import date
+
+import httpx
+
+logger = logging.getLogger(__name__)
+
 
 class NaverSportClient:
     BASE_URL = "https://api-gw.sports.naver.com"
@@ -11,21 +16,13 @@ class NaverSportClient:
         "Origin": "https://m.sports.naver.com",
     }
 
-    def __init__(self, timeout: float = 10.0):
+    def __init__(self, timeout: float = 10.0, max_retries: int = 3):
         self.timeout = timeout
+        self._max_retries = max_retries
 
     def get_game_preview(self, game_id: str) -> dict[str, Any] | None:
         url = f"{self.BASE_URL}/schedule/games/{game_id}/preview"
-
-        try:
-            with httpx.Client(timeout=self.timeout) as client:
-                response = client.get(url, headers=self.DEFAULT_HEADERS)
-                response.raise_for_status()
-                return response.json()
-        except httpx.HTTPStatusError as e:
-            return None
-        except httpx.RequestError as e:
-            return None
+        return self._request_with_retry("GET", url)
 
     def get_schedule(self, target_date: date | None = None) -> dict[str, Any] | None:
         if target_date is None:
@@ -39,12 +36,18 @@ class NaverSportClient:
             "date": date_str,
         }
 
-        try:
-            with httpx.Client(timeout=self.timeout) as client:
-                response = client.get(url, headers=self.DEFAULT_HEADERS, params=params)
-                response.raise_for_status()
-                return response.json()
-        except httpx.HTTPStatusError:
-            return None
-        except httpx.RequestError:
-            return None
+        return self._request_with_retry("GET", url, params=params)
+
+    def _request_with_retry(self, method: str, url: str, **kwargs) -> dict[str, Any] | None:
+        for attempt in range(1, self._max_retries + 1):
+            try:
+                with httpx.Client(timeout=self.timeout) as client:
+                    response = client.request(method, url, headers=self.DEFAULT_HEADERS, **kwargs)
+                    response.raise_for_status()
+                    return response.json()
+            except (httpx.HTTPStatusError, httpx.RequestError) as e:
+                logger.warning(f"API 요청 실패 ({attempt}/{self._max_retries}): {url} - {e}")
+                if attempt == self._max_retries:
+                    logger.error(f"API 요청 최종 실패: {url}")
+                    return None
+        return None
