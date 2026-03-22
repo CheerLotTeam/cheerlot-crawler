@@ -4,7 +4,7 @@ class PlayerBase(BaseModel):
     player_code: str = Field(..., max_length=20)
     team_code: str = Field(..., max_length=10)
     name: str = Field(..., max_length=50)
-    back_number: int = Field(..., ge=0, le=99)
+    back_number: int = Field(..., ge=0, le=999)
     position: str = Field(..., max_length=20)
     bat_throw: str = Field(..., max_length=10)
 
