@@ -6,6 +6,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.date import DateTrigger
 
 from app.constants import KST
+from app.repositories.team_repository import TeamRepository
 from app.schemas.crawl import CrawlResult
 from app.services.crawl_service import CrawlService
 from app.services.crawler.schedule import ScheduleCrawlerService
@@ -21,16 +22,18 @@ class SchedulerService:
         schedule_crawler: ScheduleCrawlerService | None = None,
         crawl_service: CrawlService | None = None,
         discord_notifier: DiscordNotifier | None = None,
+        team_repository: TeamRepository | None = None,
     ):
         self._schedule_crawler = schedule_crawler or ScheduleCrawlerService()
         self._crawl_service = crawl_service or CrawlService()
         self._discord_notifier = discord_notifier or DiscordNotifier()
+        self._team_repository = team_repository or TeamRepository()
         self._scheduler = BackgroundScheduler(timezone=KST)
 
     def start(self) -> None:
         self._scheduler.add_job(
             func=self._schedule_daily_games,
-            trigger=CronTrigger(hour=6, minute=0, timezone=KST),
+            trigger=CronTrigger(hour=0, minute=5, timezone=KST),
             id="daily_schedule",
             replace_existing=True,
         )
@@ -45,6 +48,7 @@ class SchedulerService:
         logger.info("스케줄러 종료")
 
     def _schedule_daily_games(self) -> None:
+        self._team_repository.reset_today_game_status()
         games = self._schedule_crawler.get_today_games()
         self._discord_notifier.send_daily_schedule(games)
 
