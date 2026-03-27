@@ -35,5 +35,9 @@ jobs:
             cd ~/cheerlot-crawler
             git pull origin main
             docker compose up --build -d
-            sleep 5
-            curl -f http://localhost:8000/health || exit 1
+            for i in 1 2 3 4 5; do
+              sleep 5
+              curl -f http://localhost:8000/health && exit 0 || true
+            done
+            echo "Health check failed after 5 attempts"
+            exit 1
