@@ -42,8 +42,13 @@ class PreviewParser:
         if not self._is_valid_response(data):
             return None
 
-        preview_data = data["result"]["previewData"]
-        game_info = preview_data["gameInfo"]
+        preview_data = data["result"].get("previewData")
+        if preview_data is None:
+            return None
+
+        game_info = preview_data.get("gameInfo")
+        if game_info is None:
+            return None
 
         home_lineup = preview_data.get("homeTeamLineUp", {}).get("fullLineUp", [])
         away_lineup = preview_data.get("awayTeamLineUp", {}).get("fullLineUp", [])
@@ -69,8 +74,13 @@ class PreviewParser:
         if not self._is_valid_response(data):
             return None
 
-        preview_data = data["result"]["previewData"]
-        game_info = preview_data["gameInfo"]
+        preview_data = data["result"].get("previewData")
+        if preview_data is None:
+            return None
+
+        game_info = preview_data.get("gameInfo")
+        if game_info is None:
+            return None
 
         home_starter = preview_data.get("homeStarter", {})
         away_starter = preview_data.get("awayStarter", {})
@@ -86,7 +96,13 @@ class PreviewParser:
         if not self._is_valid_response(data):
             return None
 
-        game_info = data["result"]["previewData"]["gameInfo"]
+        preview_data = data["result"].get("previewData")
+        if preview_data is None:
+            return None
+
+        game_info = preview_data.get("gameInfo")
+        if game_info is None:
+            return None
 
         start_time = self._parse_game_time(game_info.get("gtime"))
         if start_time is None:

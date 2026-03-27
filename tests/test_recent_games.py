@@ -83,6 +83,22 @@ class TestPreviewParserGameSummary:
 
         assert result is None
 
+    def test_parse_game_summary_no_preview_data(self):
+        parser = PreviewParser()
+        data = {"code": 200, "success": True, "result": {"previewData": None}}
+
+        result = parser.parse_game_summary(data)
+
+        assert result is None
+
+    def test_parse_game_summary_no_game_info(self):
+        parser = PreviewParser()
+        data = {"code": 200, "success": True, "result": {"previewData": {}}}
+
+        result = parser.parse_game_summary(data)
+
+        assert result is None
+
 
 class TestScheduleParserByDate:
 
