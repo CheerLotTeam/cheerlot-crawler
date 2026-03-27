@@ -8,7 +8,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-from app.routers import crawl
+from app.routers import crawl, games
 from app.services.scheduler import SchedulerService
 
 scheduler_service = SchedulerService()
@@ -24,6 +24,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Cheerlot Crawler API", lifespan=lifespan)
 
 app.include_router(crawl.router)
+app.include_router(games.router)
 
 
 @app.get("/")

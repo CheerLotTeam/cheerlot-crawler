@@ -29,6 +29,13 @@ class ScheduledGame:
     home_team_code: str
     away_team_code: str
 
+@dataclass
+class GameSummary:
+    home_team_code: str
+    away_team_code: str
+    home_starter_name: str | None = None
+    away_starter_name: str | None = None
+
 class PreviewParser:
 
     def parse(self, data: dict[str, Any]) -> GameLineup | None:
@@ -56,6 +63,23 @@ class PreviewParser:
             game_date=game_date,
             home_starter_name=home_starter.get("playerInfo", {}).get("name"),
             away_starter_name=away_starter.get("playerInfo", {}).get("name"),
+        )
+
+    def parse_game_summary(self, data: dict[str, Any]) -> GameSummary | None:
+        if not self._is_valid_response(data):
+            return None
+
+        preview_data = data["result"]["previewData"]
+        game_info = preview_data["gameInfo"]
+
+        home_starter = preview_data.get("homeStarter", {})
+        away_starter = preview_data.get("awayStarter", {})
+
+        return GameSummary(
+            home_team_code=game_info["hCode"].lower(),
+            away_team_code=game_info["aCode"].lower(),
+            home_starter_name=home_starter.get("playerInfo", {}).get("name") if home_starter else None,
+            away_starter_name=away_starter.get("playerInfo", {}).get("name") if away_starter else None,
         )
 
     def parse_scheduled_game(self, game_id: str, data: dict[str, Any]) -> ScheduledGame | None:
@@ -127,8 +151,17 @@ class ScheduleParser:
         result = data["result"]
         today = result["today"]
 
+        return self._extract_game_ids_for_date(result, today)
+
+    def parse_game_ids_by_date(self, data: dict[str, Any], target_date: str) -> list[str]:
+        if not self._is_valid_response(data):
+            return []
+
+        return self._extract_game_ids_for_date(data["result"], target_date)
+
+    def _extract_game_ids_for_date(self, result: dict[str, Any], target_date: str) -> list[str]:
         for date_node in result.get("dates", []):
-            if date_node.get("ymd") == today:
+            if date_node.get("ymd") == target_date:
                 game_ids = date_node.get("gameIds", [])
                 return [gid for gid in game_ids if len(gid) == KBO_GAME_ID_LENGTH]
 
