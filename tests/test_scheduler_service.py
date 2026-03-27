@@ -10,6 +10,7 @@ class TestScheduleDailyGames:
         mock_schedule_crawler.get_today_games.return_value = []
         mock_discord = MagicMock()
         mock_team_repo = MagicMock()
+        mock_team_repo.reset_today_game_status.return_value = 0
 
         service = SchedulerService(
             schedule_crawler=mock_schedule_crawler,
@@ -41,6 +42,42 @@ class TestScheduleDailyGames:
         service._schedule_daily_games()
 
         assert call_order == ["reset", "get_today_games"]
+
+    def test_cache_reset_called_when_teams_reset(self):
+        mock_schedule_crawler = MagicMock()
+        mock_schedule_crawler.get_today_games.return_value = []
+        mock_discord = MagicMock()
+        mock_team_repo = MagicMock()
+        mock_team_repo.reset_today_game_status.return_value = 3
+        mock_cache_reset = MagicMock()
+
+        service = SchedulerService(
+            schedule_crawler=mock_schedule_crawler,
+            discord_notifier=mock_discord,
+            team_repository=mock_team_repo,
+            cache_reset_service=mock_cache_reset,
+        )
+        service._schedule_daily_games()
+
+        mock_cache_reset.reset.assert_called_once()
+
+    def test_cache_reset_not_called_when_no_teams_reset(self):
+        mock_schedule_crawler = MagicMock()
+        mock_schedule_crawler.get_today_games.return_value = []
+        mock_discord = MagicMock()
+        mock_team_repo = MagicMock()
+        mock_team_repo.reset_today_game_status.return_value = 0
+        mock_cache_reset = MagicMock()
+
+        service = SchedulerService(
+            schedule_crawler=mock_schedule_crawler,
+            discord_notifier=mock_discord,
+            team_repository=mock_team_repo,
+            cache_reset_service=mock_cache_reset,
+        )
+        service._schedule_daily_games()
+
+        mock_cache_reset.reset.assert_not_called()
 
     def test_cron_trigger_is_0_05(self):
         mock_schedule_crawler = MagicMock()
