@@ -58,7 +58,7 @@ class RecentGamesService:
             logger.warning(f"스케줄 조회 실패: {date_str}")
             return DaySchedule(date=date_str, games=[])
 
-        naver_date_str = target_date.strftime("%Y%m%d")
+        naver_date_str = target_date.strftime("%Y-%m-%d")
         game_ids = self.schedule_parser.parse_game_ids_by_date(schedule_data, naver_date_str)
 
         if not game_ids:

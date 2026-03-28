@@ -10,7 +10,7 @@ def _make_schedule_response(date_entries: list[dict]) -> dict:
         "code": 200,
         "success": True,
         "result": {
-            "today": "20260327",
+            "today": "2026-03-27",
             "dates": date_entries,
         },
     }
@@ -105,32 +105,32 @@ class TestScheduleParserByDate:
     def test_parse_game_ids_by_date(self):
         parser = ScheduleParser()
         data = _make_schedule_response([
-            {"ymd": "20260327", "gameIds": ["20260327LGKT00000"]},
-            {"ymd": "20260326", "gameIds": []},
-            {"ymd": "20260325", "gameIds": ["20260325HTLG00000"]},
+            {"ymd": "2026-03-27", "gameIds": ["20260327LGKT00000"]},
+            {"ymd": "2026-03-26", "gameIds": []},
+            {"ymd": "2026-03-25", "gameIds": ["20260325HTLG00000"]},
         ])
 
-        result = parser.parse_game_ids_by_date(data, "20260325")
+        result = parser.parse_game_ids_by_date(data, "2026-03-25")
 
         assert result == ["20260325HTLG00000"]
 
     def test_parse_game_ids_by_date_not_found(self):
         parser = ScheduleParser()
         data = _make_schedule_response([
-            {"ymd": "20260327", "gameIds": ["20260327LGKT00000"]},
+            {"ymd": "2026-03-27", "gameIds": ["20260327LGKT00000"]},
         ])
 
-        result = parser.parse_game_ids_by_date(data, "20260320")
+        result = parser.parse_game_ids_by_date(data, "2026-03-20")
 
         assert result == []
 
     def test_parse_game_ids_filters_invalid_length(self):
         parser = ScheduleParser()
         data = _make_schedule_response([
-            {"ymd": "20260327", "gameIds": ["20260327LGKT00000", "SHORT"]},
+            {"ymd": "2026-03-27", "gameIds": ["20260327LGKT00000", "SHORT"]},
         ])
 
-        result = parser.parse_game_ids_by_date(data, "20260327")
+        result = parser.parse_game_ids_by_date(data, "2026-03-27")
 
         assert result == ["20260327LGKT00000"]
 
@@ -145,9 +145,9 @@ class TestRecentGamesService:
     def test_get_recent_games_success(self):
         mock_client = MagicMock()
         schedule_data = _make_schedule_response([
-            {"ymd": "20260327", "gameIds": ["20260327LGKT00000", "20260327OBSS00000"]},
-            {"ymd": "20260326", "gameIds": []},
-            {"ymd": "20260325", "gameIds": ["20260325HTLG00000"]},
+            {"ymd": "2026-03-27", "gameIds": ["20260327LGKT00000", "20260327OBSS00000"]},
+            {"ymd": "2026-03-26", "gameIds": []},
+            {"ymd": "2026-03-25", "gameIds": ["20260325HTLG00000"]},
         ])
         mock_client.get_schedule.return_value = schedule_data
         mock_client.get_game_preview.side_effect = [
@@ -198,9 +198,9 @@ class TestRecentGamesService:
     def test_get_recent_games_preview_failure(self):
         mock_client = MagicMock()
         schedule_data = _make_schedule_response([
-            {"ymd": "20260327", "gameIds": ["20260327LGKT00000"]},
-            {"ymd": "20260326", "gameIds": []},
-            {"ymd": "20260325", "gameIds": []},
+            {"ymd": "2026-03-27", "gameIds": ["20260327LGKT00000"]},
+            {"ymd": "2026-03-26", "gameIds": []},
+            {"ymd": "2026-03-25", "gameIds": []},
         ])
         mock_client.get_schedule.return_value = schedule_data
         mock_client.get_game_preview.return_value = None
@@ -214,11 +214,11 @@ class TestRecentGamesService:
     def test_cross_month_dates_fetch_separate_schedules(self):
         mock_client = MagicMock()
         april_data = _make_schedule_response([
-            {"ymd": "20260401", "gameIds": ["20260401LGKT00000"]},
+            {"ymd": "2026-04-01", "gameIds": ["20260401LGKT00000"]},
         ])
         march_data = _make_schedule_response([
-            {"ymd": "20260331", "gameIds": []},
-            {"ymd": "20260330", "gameIds": []},
+            {"ymd": "2026-03-31", "gameIds": []},
+            {"ymd": "2026-03-30", "gameIds": []},
         ])
         mock_client.get_schedule.side_effect = [april_data, march_data]
         mock_client.get_game_preview.return_value = _make_preview_response("LG", "KT")
@@ -232,9 +232,9 @@ class TestRecentGamesService:
     def test_same_month_reuses_schedule_cache(self):
         mock_client = MagicMock()
         schedule_data = _make_schedule_response([
-            {"ymd": "20260327", "gameIds": []},
-            {"ymd": "20260326", "gameIds": []},
-            {"ymd": "20260325", "gameIds": []},
+            {"ymd": "2026-03-27", "gameIds": []},
+            {"ymd": "2026-03-26", "gameIds": []},
+            {"ymd": "2026-03-25", "gameIds": []},
         ])
         mock_client.get_schedule.return_value = schedule_data
 
