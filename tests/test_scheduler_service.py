@@ -1,6 +1,9 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
+from app.services.crawler.parser import ScheduledGame
 from app.services.scheduler.scheduler_service import SchedulerService
+
+from datetime import time
 
 
 class TestScheduleDailyGames:
@@ -60,6 +63,49 @@ class TestScheduleDailyGames:
         service._schedule_daily_games()
 
         mock_cache_reset.reset.assert_called_once()
+
+    def test_marks_today_game_teams_when_games_exist(self):
+        games = [
+            ScheduledGame(game_id="id1", start_time=time(14, 0), home_team_code="lg", away_team_code="kt"),
+            ScheduledGame(game_id="id2", start_time=time(14, 0), home_team_code="nc", away_team_code="ob"),
+        ]
+        mock_schedule_crawler = MagicMock()
+        mock_schedule_crawler.get_today_games.return_value = games
+        mock_discord = MagicMock()
+        mock_team_repo = MagicMock()
+        mock_team_repo.reset_today_game_status.return_value = 0
+        mock_cache_reset = MagicMock()
+
+        service = SchedulerService(
+            schedule_crawler=mock_schedule_crawler,
+            discord_notifier=mock_discord,
+            team_repository=mock_team_repo,
+            cache_reset_service=mock_cache_reset,
+        )
+        service._schedule_daily_games()
+
+        set_calls = mock_team_repo.set_today_game_status.call_args_list
+        called_teams = {c[0][0] for c in set_calls}
+        assert called_teams == {"lg", "kt", "nc", "ob"}
+        for c in set_calls:
+            assert c[0][1] is True
+        mock_cache_reset.reset.assert_called()
+
+    def test_does_not_mark_teams_when_no_games(self):
+        mock_schedule_crawler = MagicMock()
+        mock_schedule_crawler.get_today_games.return_value = []
+        mock_discord = MagicMock()
+        mock_team_repo = MagicMock()
+        mock_team_repo.reset_today_game_status.return_value = 0
+
+        service = SchedulerService(
+            schedule_crawler=mock_schedule_crawler,
+            discord_notifier=mock_discord,
+            team_repository=mock_team_repo,
+        )
+        service._schedule_daily_games()
+
+        mock_team_repo.set_today_game_status.assert_not_called()
 
     def test_cache_reset_not_called_when_no_teams_reset(self):
         mock_schedule_crawler = MagicMock()

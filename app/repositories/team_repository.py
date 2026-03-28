@@ -53,6 +53,18 @@ class TeamRepository(BaseRepository[Team]):
         logger.info(f"{len(teams)}개 팀 has_today_game 리셋 완료")
         return len(teams)
 
+    def set_today_game_status(self, team_code: str, status: bool) -> None:
+        filter = {
+            "property": TeamMapper.PROP_TEAM_CODE,
+            "title": {"equals": team_code},
+        }
+        pages = self._client.query_database(self.database_id, filter=filter)
+        if pages:
+            self._client.update_page(
+                pages[0]["id"],
+                {TeamMapper.PROP_HAS_TODAY_GAME: {"checkbox": status}},
+            )
+
     def upsert(self, team: Team) -> UpsertResult:
         filter = {
             "property": TeamMapper.PROP_TEAM_CODE,

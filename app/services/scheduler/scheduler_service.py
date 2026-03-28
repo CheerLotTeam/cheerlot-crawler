@@ -61,6 +61,9 @@ class SchedulerService:
             logger.info("오늘 경기 없음")
             return
 
+        self._mark_today_game_teams(games)
+        self._cache_reset_service.reset()
+
         now = datetime.now(KST)
         scheduled_count = 0
 
@@ -105,3 +108,14 @@ class SchedulerService:
                 error_message=str(e),
             )
             self._discord_notifier.send_lineup_result(error_result)
+
+    def _mark_today_game_teams(self, games: list) -> None:
+        team_codes = set()
+        for game in games:
+            team_codes.add(game.home_team_code)
+            team_codes.add(game.away_team_code)
+
+        for team_code in team_codes:
+            self._team_repository.set_today_game_status(team_code, True)
+
+        logger.info(f"{len(team_codes)}개 팀 has_today_game 설정 완료")
