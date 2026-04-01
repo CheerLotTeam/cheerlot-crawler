@@ -1,8 +1,10 @@
 import logging
 from typing import Any
-from datetime import date
+from datetime import date, datetime
 
 import httpx
+
+from app.constants import KST
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,7 @@ class NaverSportClient:
 
     def get_schedule(self, target_date: date | None = None) -> dict[str, Any] | None:
         if target_date is None:
-            target_date = date.today()
+            target_date = datetime.now(KST).date()
 
         date_str = target_date.strftime("%Y-%m-%d")
         url = f"{self.BASE_URL}/schedule/calendar"
