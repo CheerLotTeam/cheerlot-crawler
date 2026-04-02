@@ -1,4 +1,5 @@
 import logging
+import threading
 from datetime import datetime, time, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -44,7 +45,7 @@ class SchedulerService:
         self._scheduler.start()
         logger.info("스케줄러 시작")
 
-        self._schedule_daily_games()
+        threading.Thread(target=self._schedule_daily_games, daemon=True).start()
 
     def shutdown(self) -> None:
         self._scheduler.shutdown(wait=False)
