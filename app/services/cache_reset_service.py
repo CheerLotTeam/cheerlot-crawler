@@ -7,9 +7,9 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TIMEOUT = 10.0
+DEFAULT_TIMEOUT = 30.0
 DEFAULT_MAX_RETRIES = 3
-BACKOFF_BASE_SECONDS = 1
+BACKOFF_BASE_SECONDS = 3
 
 
 class CacheResetService:
