@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 import httpx
 import pytest
 
-from app.services.cache_reset_service import CacheResetService
+from app.services.cache_reset_service import CacheResetService, BACKOFF_BASE_SECONDS
 
 TEST_URL = "http://localhost:8080/api/cache/reset"
 
@@ -56,7 +56,7 @@ class TestReset:
 
         service = CacheResetService(cache_reset_url=TEST_URL, max_retries=3)
         assert service.reset() is True
-        mock_sleep.assert_called_once_with(1)
+        mock_sleep.assert_called_once_with(BACKOFF_BASE_SECONDS)
 
     @patch("app.services.cache_reset_service.time.sleep")
     @patch("app.services.cache_reset_service.httpx.Client")
@@ -88,7 +88,7 @@ class TestReset:
 
         service = CacheResetService(cache_reset_url=TEST_URL, max_retries=2)
         assert service.reset() is False
-        mock_sleep.assert_called_once_with(1)
+        mock_sleep.assert_called_once_with(BACKOFF_BASE_SECONDS)
 
     @patch("app.services.cache_reset_service.time.sleep")
     @patch("app.services.cache_reset_service.httpx.Client")
@@ -108,4 +108,5 @@ class TestReset:
         service.reset()
 
         sleep_calls = [call.args[0] for call in mock_sleep.call_args_list]
-        assert sleep_calls == [1, 2, 4]
+        b = BACKOFF_BASE_SECONDS
+        assert sleep_calls == [b, b * 2, b * 4]
