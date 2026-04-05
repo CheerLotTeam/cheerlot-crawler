@@ -193,6 +193,7 @@ class CrawlService:
             team_code=team_code,
             team_name=team_name,
             has_today_game=True,
+            is_lineup_updated_today=True,
             opponent_team_code=opponent_code,
             starter_pitcher_name=starter_name,
             last_game_date=game_date,

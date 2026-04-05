@@ -11,6 +11,7 @@ class TeamMapper(BaseMapper[Team]):
     PROP_OPPONENT_CODE = "opponent_team_code"
     PROP_STARTER_PITCHER = "starter_pitcher_name"
     PROP_LAST_GAME_DATE = "last_game_date"
+    PROP_LINEUP_UPDATED = "is_lineup_updated_today"
     PROP_SEASON_ENDED = "is_season_ended"
     PROP_UPDATED_AT = "updated_at"
 
@@ -19,6 +20,7 @@ class TeamMapper(BaseMapper[Team]):
             self.PROP_TEAM_CODE: self._make_title(model.team_code),
             self.PROP_TEAM_NAME: self._make_rich_text(model.team_name),
             self.PROP_HAS_TODAY_GAME: self._make_checkbox(model.has_today_game),
+            self.PROP_LINEUP_UPDATED: self._make_checkbox(model.is_lineup_updated_today),
             self.PROP_SEASON_ENDED: self._make_checkbox(model.is_season_ended),
             self.PROP_UPDATED_AT: self._make_date(model.updated_at.strftime("%Y-%m-%d") if model.updated_at else None),
         }
@@ -46,6 +48,7 @@ class TeamMapper(BaseMapper[Team]):
             team_code=self._get_title(props, self.PROP_TEAM_CODE),
             team_name=self._get_rich_text(props, self.PROP_TEAM_NAME),
             has_today_game=self._get_checkbox(props, self.PROP_HAS_TODAY_GAME),
+            is_lineup_updated_today=self._get_checkbox(props, self.PROP_LINEUP_UPDATED),
             opponent_team_code=self._get_rich_text(props, self.PROP_OPPONENT_CODE) or None,
             starter_pitcher_name=self._get_rich_text(props, self.PROP_STARTER_PITCHER) or None,
             last_game_date=date.fromisoformat(last_game_str) if last_game_str else None,

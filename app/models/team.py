@@ -7,6 +7,7 @@ class TeamBase(BaseModel):
 
 class TeamGameStatus(BaseModel):
     has_today_game: bool = False
+    is_lineup_updated_today: bool = False
     opponent_team_code: str | None = None
     starter_pitcher_name: str | None = None
     last_game_date: date | None = None
@@ -14,6 +15,7 @@ class TeamGameStatus(BaseModel):
 
 class Team(TeamBase):
     has_today_game: bool = False
+    is_lineup_updated_today: bool = False
     opponent_team_code: str | None = Field(None, max_length=10)
     starter_pitcher_name: str | None = Field(None, max_length=50)
     last_game_date: date | None = None

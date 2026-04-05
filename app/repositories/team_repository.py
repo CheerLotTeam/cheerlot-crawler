@@ -47,7 +47,10 @@ class TeamRepository(BaseRepository[Team]):
             if pages:
                 self._client.update_page(
                     pages[0]["id"],
-                    {TeamMapper.PROP_HAS_TODAY_GAME: {"checkbox": False}},
+                    {
+                        TeamMapper.PROP_HAS_TODAY_GAME: {"checkbox": False},
+                        TeamMapper.PROP_LINEUP_UPDATED: {"checkbox": False},
+                    },
                 )
 
         logger.info(f"{len(teams)}개 팀 has_today_game 리셋 완료")
