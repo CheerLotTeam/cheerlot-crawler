@@ -35,7 +35,10 @@ class TestResetTodayGameStatus:
         assert count == 1
         mock_client.update_page.assert_called_once_with(
             "page-1",
-            {"has_today_game": {"checkbox": False}},
+            {
+                "has_today_game": {"checkbox": False},
+                "is_lineup_updated_today": {"checkbox": False},
+            },
         )
 
     def test_resets_multiple_teams(self):
