@@ -146,8 +146,8 @@ class TestRecentGamesService:
         mock_client = MagicMock()
         schedule_data = _make_schedule_response([
             {"ymd": "2026-03-27", "gameIds": ["20260327LGKT00000", "20260327OBSS00000"]},
-            {"ymd": "2026-03-26", "gameIds": []},
-            {"ymd": "2026-03-25", "gameIds": ["20260325HTLG00000"]},
+            {"ymd": "2026-03-28", "gameIds": []},
+            {"ymd": "2026-03-29", "gameIds": ["20260329HTLG00000"]},
         ])
         mock_client.get_schedule.return_value = schedule_data
         mock_client.get_game_preview.side_effect = [
@@ -172,17 +172,17 @@ class TestRecentGamesService:
         assert today.games[1].awayTeamCode == "ss"
         assert today.games[1].homeStarterPitcherName is None
 
-        yesterday = result.schedules[1]
-        assert yesterday.date == "2026-03-26"
-        assert yesterday.games == []
+        tomorrow = result.schedules[1]
+        assert tomorrow.date == "2026-03-28"
+        assert tomorrow.games == []
 
-        day_before = result.schedules[2]
-        assert day_before.date == "2026-03-25"
-        assert len(day_before.games) == 1
-        assert day_before.games[0].homeTeamCode == "ht"
-        assert day_before.games[0].awayTeamCode == "lg"
-        assert day_before.games[0].homeStarterPitcherName == "양현종"
-        assert day_before.games[0].awayStarterPitcherName == "이민호"
+        day_after = result.schedules[2]
+        assert day_after.date == "2026-03-29"
+        assert len(day_after.games) == 1
+        assert day_after.games[0].homeTeamCode == "ht"
+        assert day_after.games[0].awayTeamCode == "lg"
+        assert day_after.games[0].homeStarterPitcherName == "양현종"
+        assert day_after.games[0].awayStarterPitcherName == "이민호"
 
     def test_get_recent_games_schedule_failure(self):
         mock_client = MagicMock()
@@ -199,8 +199,8 @@ class TestRecentGamesService:
         mock_client = MagicMock()
         schedule_data = _make_schedule_response([
             {"ymd": "2026-03-27", "gameIds": ["20260327LGKT00000"]},
-            {"ymd": "2026-03-26", "gameIds": []},
-            {"ymd": "2026-03-25", "gameIds": []},
+            {"ymd": "2026-03-28", "gameIds": []},
+            {"ymd": "2026-03-29", "gameIds": []},
         ])
         mock_client.get_schedule.return_value = schedule_data
         mock_client.get_game_preview.return_value = None
@@ -213,17 +213,17 @@ class TestRecentGamesService:
 
     def test_cross_month_dates_fetch_separate_schedules(self):
         mock_client = MagicMock()
-        april_data = _make_schedule_response([
-            {"ymd": "2026-04-01", "gameIds": ["20260401LGKT00000"]},
-        ])
         march_data = _make_schedule_response([
-            {"ymd": "2026-03-31", "gameIds": []},
-            {"ymd": "2026-03-30", "gameIds": []},
+            {"ymd": "2026-03-30", "gameIds": ["20260330LGKT00000"]},
         ])
-        mock_client.get_schedule.side_effect = [april_data, march_data]
+        april_data = _make_schedule_response([
+            {"ymd": "2026-03-31", "gameIds": []},
+            {"ymd": "2026-04-01", "gameIds": []},
+        ])
+        mock_client.get_schedule.side_effect = [march_data, april_data]
         mock_client.get_game_preview.return_value = _make_preview_response("LG", "KT")
 
-        service = self._create_service(mock_client, today=date(2026, 4, 1))
+        service = self._create_service(mock_client, today=date(2026, 3, 30))
         result = service.get_recent_games()
 
         assert mock_client.get_schedule.call_count == 2
@@ -233,8 +233,8 @@ class TestRecentGamesService:
         mock_client = MagicMock()
         schedule_data = _make_schedule_response([
             {"ymd": "2026-03-27", "gameIds": []},
-            {"ymd": "2026-03-26", "gameIds": []},
-            {"ymd": "2026-03-25", "gameIds": []},
+            {"ymd": "2026-03-28", "gameIds": []},
+            {"ymd": "2026-03-29", "gameIds": []},
         ])
         mock_client.get_schedule.return_value = schedule_data
 
