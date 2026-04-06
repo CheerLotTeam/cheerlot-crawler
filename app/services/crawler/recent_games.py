@@ -28,7 +28,7 @@ class RecentGamesService:
         logger.info("최근 3일 경기 일정 조회 시작")
 
         today = self._get_today()
-        target_dates = [today, today - timedelta(days=1), today - timedelta(days=2)]
+        target_dates = [today, today + timedelta(days=1), today + timedelta(days=2)]
 
         schedule_data_by_month: dict[str, dict] = {}
         schedules: list[DaySchedule] = []
