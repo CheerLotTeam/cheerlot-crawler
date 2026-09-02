@@ -1,4 +1,5 @@
 import logging
+import threading
 import time
 
 import httpx
@@ -9,6 +10,24 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 30.0
 DEFAULT_MAX_RETRIES = 3
+MIN_REQUEST_INTERVAL = 0.34  # Notion 공개 API 한도 : 평균 3 req/s
+RETRYABLE_STATUS = (429, 502, 503, 504)
+DEFAULT_RETRY_AFTER = 1.0
+
+# ponytail: 프로세스 전역 스로틀. 워커를 여러 개로 늘리면 Redis 토큰 버킷 필요
+_throttle_lock = threading.Lock()
+_last_request_at = 0.0
+
+
+def _wait_for_slot() -> None:
+    """Notion 한도는 integration 토큰 단위라 스케줄러 스레드 전체를 직렬화한다."""
+    global _last_request_at
+
+    with _throttle_lock:
+        wait = MIN_REQUEST_INTERVAL - (time.monotonic() - _last_request_at)
+        if wait > 0:
+            time.sleep(wait)
+        _last_request_at = time.monotonic()
 
 
 class NotionClientError(Exception):
@@ -36,6 +55,12 @@ class NotionClient:
             "Content-Type": "application/json",
         }
 
+    def _retry_after(self, response) -> float:
+        try:
+            return float(response.headers.get("Retry-After", DEFAULT_RETRY_AFTER))
+        except (TypeError, ValueError):
+            return DEFAULT_RETRY_AFTER
+
     def _request_with_retry(
         self,
         method: str,
@@ -45,6 +70,7 @@ class NotionClient:
         last_exception = None
 
         for attempt in range(1, self._max_retries + 1):
+            _wait_for_slot()
             try:
                 with httpx.Client(timeout=self._timeout) as client:
                     response = client.request(
@@ -53,9 +79,19 @@ class NotionClient:
                     response.raise_for_status()
                     return response.json()
             except httpx.HTTPStatusError as e:
-                raise NotionClientError(
-                    f"Notion API failed (HTTP {e.response.status_code}): {e.response.text}"
-                ) from e
+                status_code = e.response.status_code
+                if status_code not in RETRYABLE_STATUS or attempt >= self._max_retries:
+                    raise NotionClientError(
+                        f"Notion API failed (HTTP {status_code}): {e.response.text}"
+                    ) from e
+
+                last_exception = e
+                retry_after = self._retry_after(e.response)
+                logger.warning(
+                    f"Notion API 요청 제한 (HTTP {status_code}) "
+                    f"({attempt}/{self._max_retries}): {url} - {retry_after}초 후 재시도"
+                )
+                time.sleep(retry_after)
             except httpx.RequestError as e:
                 last_exception = e
                 logger.warning(

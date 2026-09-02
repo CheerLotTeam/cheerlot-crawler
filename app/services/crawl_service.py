@@ -101,14 +101,9 @@ class CrawlService:
         return results
 
     def _save_lineup(self, lineup: GameLineup) -> tuple[int, list[NewPlayerInfo]]:
-        home_team = lineup.home_team_code.lower()
-        away_team = lineup.away_team_code.lower()
-
-        self._player_repository.reset_starters(home_team)
-        self._player_repository.reset_starters(away_team)
-
         saved_count = 0
         new_players: list[NewPlayerInfo] = []
+        saved_codes: dict[str, set[str]] = {}
 
         all_entries = [
             (lineup.home_players, lineup.home_team_code),
@@ -116,12 +111,18 @@ class CrawlService:
         ]
 
         for players, team_code in all_entries:
+            player_codes = saved_codes.setdefault(team_code.lower(), set())
             for lineup_player in players:
                 player = self._convert_to_player(lineup_player, team_code)
                 upsert_result = self._player_repository.upsert(player)
+                player_codes.add(player.player_code)
                 saved_count += 1
                 if upsert_result.created:
                     new_players.append(self._to_new_player_info(player))
+
+        # 새 라인업 저장 후 이전 선발을 해제한다 (중간 실패 시 선발이 비는 것 방지)
+        for team_code, player_codes in saved_codes.items():
+            self._player_repository.reset_starters(team_code, keep_codes=player_codes)
 
         return saved_count, new_players
 

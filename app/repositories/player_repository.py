@@ -42,7 +42,7 @@ class PlayerRepository(BaseRepository[Player]):
         }
         return self.find_by_filter(filter)
 
-    def reset_starters(self, team_code: str) -> int:
+    def reset_starters(self, team_code: str, keep_codes: set[str] | None = None) -> int:
         filter = {
             "and": [
                 {
@@ -62,10 +62,16 @@ class PlayerRepository(BaseRepository[Player]):
             PlayerMapper.PROP_BATTING_ORDER: {"number": None},
         }
 
-        for page in pages:
-            self._client.update_page(page["id"], reset_properties)
+        keep_codes = keep_codes or set()
+        reset_count = 0
 
-        return len(pages)
+        for page in pages:
+            if self._mapper.to_model(page).player_code in keep_codes:
+                continue
+            self._client.update_page(page["id"], reset_properties)
+            reset_count += 1
+
+        return reset_count
 
     def upsert(self, player: Player) -> UpsertResult:
         filter = {
