@@ -57,3 +57,41 @@ class TestResetStarters:
         assert filter_arg["and"][0]["rich_text"]["equals"] == "lg"
         assert filter_arg["and"][1]["property"] == "is_starter"
         assert filter_arg["and"][1]["checkbox"]["equals"] is True
+
+
+class TestResetStartersKeepCodes:
+
+    def _repository_with_pages(self, pages, player_codes):
+        mock_client = MagicMock()
+        mock_client.query_database.return_value = pages
+
+        mapper = MagicMock()
+        mapper.to_model.side_effect = [
+            MagicMock(player_code=code) for code in player_codes
+        ]
+
+        repo = PlayerRepository.__new__(PlayerRepository)
+        repo._client = mock_client
+        repo._mapper = mapper
+        return repo, mock_client
+
+    def test_skips_players_in_current_lineup(self):
+        pages = [{"id": "page-1"}, {"id": "page-2"}]
+        repo, mock_client = self._repository_with_pages(pages, ["hh10", "hh20"])
+
+        count = repo.reset_starters("hh", keep_codes={"hh10"})
+
+        assert count == 1
+        mock_client.update_page.assert_called_once_with(
+            "page-2",
+            {"is_starter": {"checkbox": False}, "batting_order": {"number": None}},
+        )
+
+    def test_resets_all_when_keep_codes_empty(self):
+        pages = [{"id": "page-1"}, {"id": "page-2"}]
+        repo, mock_client = self._repository_with_pages(pages, ["hh10", "hh20"])
+
+        count = repo.reset_starters("hh", keep_codes=set())
+
+        assert count == 2
+        assert mock_client.update_page.call_count == 2
